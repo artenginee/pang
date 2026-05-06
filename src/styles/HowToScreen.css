@@ -1,0 +1,36 @@
+.howto-screen {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  width: 100vw;
+  height: 100vh;
+  background-color: #1a1a2e;
+  gap: 40px;
+}
+
+.howto-title {
+  font-size: 2.4rem;
+  font-weight: 800;
+  color: #f5c518;
+  letter-spacing: 0.1em;
+  margin: 0;
+}
+
+.controls-table {
+  border-collapse: collapse;
+  color: #ffffff;
+  font-size: 1.1rem;
+}
+
+.controls-table td {
+  padding: 12px 32px;
+  border: 1px solid #444466;
+  text-align: center;
+}
+
+.controls-table td:first-child {
+  font-weight: bold;
+  color: #f5c518;
+  letter-spacing: 0.05em;
+}
