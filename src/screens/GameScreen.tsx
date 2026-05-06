@@ -63,9 +63,10 @@ function checkPlayerBallCollision(px: number, py: number, ball: Ball): boolean {
 
 interface GameScreenProps {
   onExit: () => void
+  onGameOver: () => void
 }
 
-export default function GameScreen({ onExit: _onExit }: GameScreenProps) {
+export default function GameScreen({ onExit: _onExit, onGameOver }: GameScreenProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const keysRef = useRef<Set<string>>(new Set())
 
@@ -98,6 +99,7 @@ export default function GameScreen({ onExit: _onExit }: GameScreenProps) {
     let rafId: number
     let last = performance.now()
     let spaceWasUp = true
+    let prevInvincible = false
 
     function update(dt: number) {
       const player = playerRef.current
@@ -108,6 +110,13 @@ export default function GameScreen({ onExit: _onExit }: GameScreenProps) {
       if (isInvincible) {
         invincibleTimerRef.current = Math.max(0, invincibleTimerRef.current - dt)
       }
+
+      // 무적 종료 시점에 목숨이 0이면 게임 오버
+      if (prevInvincible && invincibleTimerRef.current === 0 && livesRef.current === 0) {
+        onGameOver()
+        return
+      }
+      prevInvincible = invincibleTimerRef.current > 0
 
       // 플레이어 이동
       if (keys.has('ArrowLeft')) {
