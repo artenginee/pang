@@ -7,6 +7,7 @@ import {
   PLAYER_SPEED,
   PLAYER_LIVES,
   INVINCIBLE_DURATION,
+  STAGE_TIME,
   GRAVITY,
   HARPOON_SPEED,
   BALL_PROPS,
@@ -76,8 +77,11 @@ export default function GameScreen({ onExit: _onExit, onGameOver }: GameScreenPr
 
   const livesRef = useRef(PLAYER_LIVES)
   const invincibleTimerRef = useRef(0)
+  const timerRef = useRef(STAGE_TIME)
+  const lastDisplaySecondRef = useRef(STAGE_TIME)
 
   const [lives, setLives] = useState(PLAYER_LIVES)
+  const [displayTime, setDisplayTime] = useState(STAGE_TIME)
 
   useEffect(() => {
     const onDown = (e: KeyboardEvent) => keysRef.current.add(e.code)
@@ -101,6 +105,23 @@ export default function GameScreen({ onExit: _onExit, onGameOver }: GameScreenPr
     let spaceWasUp = true
     let prevInvincible = false
 
+    function triggerDeath(resetStage: boolean) {
+      const player = playerRef.current
+      livesRef.current -= 1
+      setLives(livesRef.current)
+      player.x = PLAYER_INIT_X
+      player.y = PLAYER_INIT_Y
+      harpoonRef.current = null
+      invincibleTimerRef.current = INVINCIBLE_DURATION
+
+      if (resetStage) {
+        ballsRef.current = initialBalls()
+        timerRef.current = STAGE_TIME
+        lastDisplaySecondRef.current = STAGE_TIME
+        setDisplayTime(STAGE_TIME)
+      }
+    }
+
     function update(dt: number) {
       const player = playerRef.current
       const keys = keysRef.current
@@ -111,12 +132,30 @@ export default function GameScreen({ onExit: _onExit, onGameOver }: GameScreenPr
         invincibleTimerRef.current = Math.max(0, invincibleTimerRef.current - dt)
       }
 
-      // 무적 종료 시점에 목숨이 0이면 게임 오버
+      // 무적 종료 시점 + 목숨 0 → 게임 오버
       if (prevInvincible && invincibleTimerRef.current === 0 && livesRef.current === 0) {
         onGameOver()
         return
       }
       prevInvincible = invincibleTimerRef.current > 0
+
+      // 제한 시간 카운트다운 (무적 중 정지)
+      if (!isInvincible) {
+        timerRef.current = Math.max(0, timerRef.current - dt)
+
+        // HUD 갱신: 표시 초가 바뀔 때만 setState
+        const currentSecond = Math.ceil(timerRef.current)
+        if (currentSecond !== lastDisplaySecondRef.current) {
+          lastDisplaySecondRef.current = currentSecond
+          setDisplayTime(currentSecond)
+        }
+
+        // 타임오버: 스테이지 리셋
+        if (timerRef.current === 0) {
+          triggerDeath(true)
+          return
+        }
+      }
 
       // 플레이어 이동
       if (keys.has('ArrowLeft')) {
@@ -172,13 +211,7 @@ export default function GameScreen({ onExit: _onExit, onGameOver }: GameScreenPr
       if (!isInvincible) {
         const hit = ballsRef.current.some(b => checkPlayerBallCollision(player.x, player.y, b))
         if (hit) {
-          livesRef.current -= 1
-          setLives(livesRef.current)
-          // 플레이어 위치 초기화
-          player.x = PLAYER_INIT_X
-          player.y = PLAYER_INIT_Y
-          harpoonRef.current = null
-          invincibleTimerRef.current = INVINCIBLE_DURATION
+          triggerDeath(false)
         }
       }
 
@@ -208,7 +241,6 @@ export default function GameScreen({ onExit: _onExit, onGameOver }: GameScreenPr
     function render() {
       ctx!.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT)
 
-      // 공
       for (const ball of ballsRef.current) {
         const { radius, color } = BALL_PROPS[ball.size]
         ctx!.beginPath()
@@ -220,7 +252,6 @@ export default function GameScreen({ onExit: _onExit, onGameOver }: GameScreenPr
         ctx!.stroke()
       }
 
-      // 작살
       if (harpoonRef.current) {
         const h = harpoonRef.current
         ctx!.beginPath()
@@ -231,7 +262,6 @@ export default function GameScreen({ onExit: _onExit, onGameOver }: GameScreenPr
         ctx!.stroke()
       }
 
-      // 플레이어 (무적 중 0.1초 주기 깜빡임)
       const isInvincible = invincibleTimerRef.current > 0
       const blink = isInvincible && Math.floor(invincibleTimerRef.current / 0.1) % 2 === 0
       if (!blink) {
@@ -261,7 +291,7 @@ export default function GameScreen({ onExit: _onExit, onGameOver }: GameScreenPr
         <div className="hud">
           <span>SCORE: 0</span>
           <span>{heartsDisplay}</span>
-          <span>TIME: 60</span>
+          <span>TIME: {displayTime}</span>
         </div>
         <canvas
           ref={canvasRef}

@@ -31,3 +31,4 @@ export const NEXT_SIZE: Record<BallSize, BallSize | null> = {
 
 export const PLAYER_LIVES = 3
 export const INVINCIBLE_DURATION = 2.0
+export const STAGE_TIME = 60
