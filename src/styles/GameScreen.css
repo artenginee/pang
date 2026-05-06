@@ -27,7 +27,6 @@
 }
 
 .game-canvas {
-  width: 480px;
-  height: 600px;
+  display: block;
   background-color: #16213e;
 }
