@@ -22,3 +22,9 @@ export const BALL_PROPS: Record<BallSize, {
   medium: { radius: 26, vx: 160, bounceVy: 480, color: '#ff4081' },
   small:  { radius: 16, vx: 220, bounceVy: 350, color: '#ffeb3b' },
 }
+
+export const NEXT_SIZE: Record<BallSize, BallSize | null> = {
+  large:  'medium',
+  medium: 'small',
+  small:  null,
+}

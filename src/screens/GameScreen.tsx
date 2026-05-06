@@ -8,6 +8,7 @@ import {
   GRAVITY,
   HARPOON_SPEED,
   BALL_PROPS,
+  NEXT_SIZE,
   type BallSize,
 } from '../constants/game'
 import '../styles/GameScreen.css'
@@ -26,9 +27,24 @@ interface Harpoon {
   baseY: number
 }
 
-function makeBall(x: number, size: BallSize, vx: number): Ball {
+function makeBall(x: number, y: number, size: BallSize, vx: number): Ball {
   const { bounceVy, radius } = BALL_PROPS[size]
-  return { x, y: CANVAS_HEIGHT - radius, size, vx, vy: -bounceVy }
+  return { x, y: y ?? CANVAS_HEIGHT - radius, size, vx, vy: -bounceVy }
+}
+
+function initialBalls(): Ball[] {
+  return [
+    makeBall(100, CANVAS_HEIGHT - BALL_PROPS.large.radius, 'large',  120),
+    makeBall(380, CANVAS_HEIGHT - BALL_PROPS.large.radius, 'large', -120),
+  ]
+}
+
+function checkHarpoonBallCollision(h: Harpoon, ball: Ball): boolean {
+  const { radius } = BALL_PROPS[ball.size]
+  const clampedY = Math.max(h.tipY, Math.min(h.baseY, ball.y))
+  const dx = ball.x - h.x
+  const dy = ball.y - clampedY
+  return Math.sqrt(dx * dx + dy * dy) <= radius
 }
 
 interface GameScreenProps {
@@ -44,12 +60,7 @@ export default function GameScreen({ onExit: _onExit }: GameScreenProps) {
     y: CANVAS_HEIGHT - PLAYER_HEIGHT - 8,
   })
 
-  const ballsRef = useRef<Ball[]>([
-    makeBall(80,  'large',   120),
-    makeBall(240, 'medium',  160),
-    makeBall(400, 'small',  -220),
-  ])
-
+  const ballsRef = useRef<Ball[]>(initialBalls())
   const harpoonRef = useRef<Harpoon | null>(null)
 
   useEffect(() => {
@@ -71,7 +82,7 @@ export default function GameScreen({ onExit: _onExit }: GameScreenProps) {
 
     let rafId: number
     let last = performance.now()
-    let spaceWasUp = true  // Space 연속 입력 방지
+    let spaceWasUp = true
 
     function update(dt: number) {
       const player = playerRef.current
@@ -97,6 +108,38 @@ export default function GameScreen({ onExit: _onExit }: GameScreenProps) {
         harpoonRef.current.tipY -= HARPOON_SPEED * dt
         if (harpoonRef.current.tipY <= 0) {
           harpoonRef.current = null
+        }
+      }
+
+      // 작살-공 충돌 처리
+      if (harpoonRef.current) {
+        const h = harpoonRef.current
+        const hitIndex = ballsRef.current.findIndex(b => checkHarpoonBallCollision(h, b))
+
+        if (hitIndex !== -1) {
+          const hit = ballsRef.current[hitIndex]
+          const nextSize = NEXT_SIZE[hit.size]
+          const { vx: newVx } = nextSize
+            ? BALL_PROPS[nextSize]
+            : { vx: 0 }
+
+          // 피격 공 제거
+          const remaining = ballsRef.current.filter((_, i) => i !== hitIndex)
+
+          // 분열 공 추가
+          if (nextSize) {
+            remaining.push(
+              makeBall(hit.x, hit.y, nextSize, -newVx),
+              makeBall(hit.x, hit.y, nextSize,  newVx),
+            )
+          }
+
+          ballsRef.current = remaining
+          harpoonRef.current = null
+
+          if (ballsRef.current.length === 0) {
+            console.log('스테이지 클리어')
+          }
         }
       }
 
