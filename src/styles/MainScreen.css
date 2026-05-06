@@ -1,0 +1,31 @@
+.main-screen {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  width: 100vw;
+  height: 100vh;
+  background-color: #1a1a2e;
+  gap: 48px;
+}
+
+.main-screen .title {
+  font-size: 5rem;
+  font-weight: 900;
+  color: #f5c518;
+  letter-spacing: 0.15em;
+  margin: 0;
+  text-shadow: 0 0 24px rgba(245, 197, 24, 0.4);
+}
+
+.main-screen .menu {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.quit-message {
+  margin-top: 12px;
+  color: #aaaaaa;
+  font-size: 0.9rem;
+}
