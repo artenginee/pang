@@ -1,10 +1,12 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   CANVAS_WIDTH,
   CANVAS_HEIGHT,
   PLAYER_WIDTH,
   PLAYER_HEIGHT,
   PLAYER_SPEED,
+  PLAYER_LIVES,
+  INVINCIBLE_DURATION,
   GRAVITY,
   HARPOON_SPEED,
   BALL_PROPS,
@@ -27,9 +29,12 @@ interface Harpoon {
   baseY: number
 }
 
+const PLAYER_INIT_X = CANVAS_WIDTH / 2 - PLAYER_WIDTH / 2
+const PLAYER_INIT_Y = CANVAS_HEIGHT - PLAYER_HEIGHT - 8
+
 function makeBall(x: number, y: number, size: BallSize, vx: number): Ball {
-  const { bounceVy, radius } = BALL_PROPS[size]
-  return { x, y: y ?? CANVAS_HEIGHT - radius, size, vx, vy: -bounceVy }
+  const { bounceVy } = BALL_PROPS[size]
+  return { x, y, size, vx, vy: -bounceVy }
 }
 
 function initialBalls(): Ball[] {
@@ -44,7 +49,16 @@ function checkHarpoonBallCollision(h: Harpoon, ball: Ball): boolean {
   const clampedY = Math.max(h.tipY, Math.min(h.baseY, ball.y))
   const dx = ball.x - h.x
   const dy = ball.y - clampedY
-  return Math.sqrt(dx * dx + dy * dy) <= radius
+  return dx * dx + dy * dy <= radius * radius
+}
+
+function checkPlayerBallCollision(px: number, py: number, ball: Ball): boolean {
+  const { radius } = BALL_PROPS[ball.size]
+  const closestX = Math.max(px, Math.min(ball.x, px + PLAYER_WIDTH))
+  const closestY = Math.max(py, Math.min(ball.y, py + PLAYER_HEIGHT))
+  const dx = ball.x - closestX
+  const dy = ball.y - closestY
+  return dx * dx + dy * dy <= radius * radius
 }
 
 interface GameScreenProps {
@@ -55,13 +69,14 @@ export default function GameScreen({ onExit: _onExit }: GameScreenProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const keysRef = useRef<Set<string>>(new Set())
 
-  const playerRef = useRef({
-    x: CANVAS_WIDTH / 2 - PLAYER_WIDTH / 2,
-    y: CANVAS_HEIGHT - PLAYER_HEIGHT - 8,
-  })
-
+  const playerRef = useRef({ x: PLAYER_INIT_X, y: PLAYER_INIT_Y })
   const ballsRef = useRef<Ball[]>(initialBalls())
   const harpoonRef = useRef<Harpoon | null>(null)
+
+  const livesRef = useRef(PLAYER_LIVES)
+  const invincibleTimerRef = useRef(0)
+
+  const [lives, setLives] = useState(PLAYER_LIVES)
 
   useEffect(() => {
     const onDown = (e: KeyboardEvent) => keysRef.current.add(e.code)
@@ -87,6 +102,12 @@ export default function GameScreen({ onExit: _onExit }: GameScreenProps) {
     function update(dt: number) {
       const player = playerRef.current
       const keys = keysRef.current
+      const isInvincible = invincibleTimerRef.current > 0
+
+      // 무적 타이머 감소
+      if (isInvincible) {
+        invincibleTimerRef.current = Math.max(0, invincibleTimerRef.current - dt)
+      }
 
       // 플레이어 이동
       if (keys.has('ArrowLeft')) {
@@ -111,7 +132,7 @@ export default function GameScreen({ onExit: _onExit }: GameScreenProps) {
         }
       }
 
-      // 작살-공 충돌 처리
+      // 작살-공 충돌
       if (harpoonRef.current) {
         const h = harpoonRef.current
         const hitIndex = ballsRef.current.findIndex(b => checkHarpoonBallCollision(h, b))
@@ -119,14 +140,9 @@ export default function GameScreen({ onExit: _onExit }: GameScreenProps) {
         if (hitIndex !== -1) {
           const hit = ballsRef.current[hitIndex]
           const nextSize = NEXT_SIZE[hit.size]
-          const { vx: newVx } = nextSize
-            ? BALL_PROPS[nextSize]
-            : { vx: 0 }
+          const newVx = nextSize ? BALL_PROPS[nextSize].vx : 0
 
-          // 피격 공 제거
           const remaining = ballsRef.current.filter((_, i) => i !== hitIndex)
-
-          // 분열 공 추가
           if (nextSize) {
             remaining.push(
               makeBall(hit.x, hit.y, nextSize, -newVx),
@@ -140,6 +156,20 @@ export default function GameScreen({ onExit: _onExit }: GameScreenProps) {
           if (ballsRef.current.length === 0) {
             console.log('스테이지 클리어')
           }
+        }
+      }
+
+      // 플레이어-공 충돌 (무적 중 제외)
+      if (!isInvincible) {
+        const hit = ballsRef.current.some(b => checkPlayerBallCollision(player.x, player.y, b))
+        if (hit) {
+          livesRef.current -= 1
+          setLives(livesRef.current)
+          // 플레이어 위치 초기화
+          player.x = PLAYER_INIT_X
+          player.y = PLAYER_INIT_Y
+          harpoonRef.current = null
+          invincibleTimerRef.current = INVINCIBLE_DURATION
         }
       }
 
@@ -192,10 +222,14 @@ export default function GameScreen({ onExit: _onExit }: GameScreenProps) {
         ctx!.stroke()
       }
 
-      // 플레이어
-      const player = playerRef.current
-      ctx!.fillStyle = '#00e676'
-      ctx!.fillRect(player.x, player.y, PLAYER_WIDTH, PLAYER_HEIGHT)
+      // 플레이어 (무적 중 0.1초 주기 깜빡임)
+      const isInvincible = invincibleTimerRef.current > 0
+      const blink = isInvincible && Math.floor(invincibleTimerRef.current / 0.1) % 2 === 0
+      if (!blink) {
+        const player = playerRef.current
+        ctx!.fillStyle = isInvincible ? '#88ffbb' : '#00e676'
+        ctx!.fillRect(player.x, player.y, PLAYER_WIDTH, PLAYER_HEIGHT)
+      }
     }
 
     function loop(now: number) {
@@ -210,12 +244,14 @@ export default function GameScreen({ onExit: _onExit }: GameScreenProps) {
     return () => cancelAnimationFrame(rafId)
   }, [])
 
+  const heartsDisplay = '♥ '.repeat(lives).trim() || '☆'
+
   return (
     <div className="game-wrapper">
       <div className="game-container">
         <div className="hud">
           <span>SCORE: 0</span>
-          <span>♥ ♥ ♥</span>
+          <span>{heartsDisplay}</span>
           <span>TIME: 60</span>
         </div>
         <canvas

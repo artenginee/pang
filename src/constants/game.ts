@@ -28,3 +28,6 @@ export const NEXT_SIZE: Record<BallSize, BallSize | null> = {
   medium: 'small',
   small:  null,
 }
+
+export const PLAYER_LIVES = 3
+export const INVINCIBLE_DURATION = 2.0
