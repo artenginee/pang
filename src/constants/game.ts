@@ -39,3 +39,10 @@ export const SCORE_TABLE: Record<BallSize, number> = {
   small:  100,
 }
 export const TIME_BONUS_PER_SEC = 10
+
+export type ItemType = 'clock' | 'shield'
+export const ITEM_DROP_CHANCE = 0.4
+export const ITEM_FALL_SPEED = 150
+export const ITEM_SIZE = 20
+export const ITEM_LIFETIME = 8
+export const ITEM_FREEZE_DURATION = 5
