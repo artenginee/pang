@@ -6,18 +6,22 @@ import {
   PLAYER_HEIGHT,
   PLAYER_SPEED,
   GRAVITY,
-  BALL_LARGE_RADIUS,
-  BALL_LARGE_VX,
-  BALL_LARGE_BOUNCE_VY,
+  BALL_PROPS,
+  type BallSize,
 } from '../constants/game'
 import '../styles/GameScreen.css'
 
 interface Ball {
   x: number
   y: number
-  radius: number
+  size: BallSize
   vx: number
   vy: number
+}
+
+function makeBall(x: number, size: BallSize, vx: number): Ball {
+  const { bounceVy, radius } = BALL_PROPS[size]
+  return { x, y: CANVAS_HEIGHT - radius, size, vx, vy: -bounceVy }
 }
 
 interface GameScreenProps {
@@ -34,23 +38,11 @@ export default function GameScreen({ onExit: _onExit }: GameScreenProps) {
   })
 
   const ballsRef = useRef<Ball[]>([
-    {
-      x: 100,
-      y: CANVAS_HEIGHT - BALL_LARGE_RADIUS,
-      radius: BALL_LARGE_RADIUS,
-      vx: BALL_LARGE_VX,
-      vy: -BALL_LARGE_BOUNCE_VY,
-    },
-    {
-      x: 380,
-      y: CANVAS_HEIGHT - BALL_LARGE_RADIUS,
-      radius: BALL_LARGE_RADIUS,
-      vx: -BALL_LARGE_VX,
-      vy: -BALL_LARGE_BOUNCE_VY,
-    },
+    makeBall(80,  'large',  120),
+    makeBall(240, 'medium', 160),
+    makeBall(400, 'small', -220),
   ])
 
-  // 키 입력 등록
   useEffect(() => {
     const onDown = (e: KeyboardEvent) => keysRef.current.add(e.code)
     const onUp = (e: KeyboardEvent) => keysRef.current.delete(e.code)
@@ -62,7 +54,6 @@ export default function GameScreen({ onExit: _onExit }: GameScreenProps) {
     }
   }, [])
 
-  // 게임 루프
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas) return
@@ -73,7 +64,6 @@ export default function GameScreen({ onExit: _onExit }: GameScreenProps) {
     let last = performance.now()
 
     function update(dt: number) {
-      // 플레이어 이동
       const player = playerRef.current
       const keys = keysRef.current
       if (keys.has('ArrowLeft')) {
@@ -83,25 +73,23 @@ export default function GameScreen({ onExit: _onExit }: GameScreenProps) {
         player.x = Math.min(CANVAS_WIDTH - PLAYER_WIDTH, player.x + PLAYER_SPEED * dt)
       }
 
-      // 공 물리
       for (const ball of ballsRef.current) {
+        const { radius, bounceVy } = BALL_PROPS[ball.size]
+
         ball.vy += GRAVITY * dt
         ball.x += ball.vx * dt
         ball.y += ball.vy * dt
 
-        // 바닥 반사
-        if (ball.y + ball.radius >= CANVAS_HEIGHT) {
-          ball.y = CANVAS_HEIGHT - ball.radius
-          ball.vy = -BALL_LARGE_BOUNCE_VY
+        if (ball.y + radius >= CANVAS_HEIGHT) {
+          ball.y = CANVAS_HEIGHT - radius
+          ball.vy = -bounceVy
         }
-        // 좌벽 반사
-        if (ball.x - ball.radius <= 0) {
-          ball.x = ball.radius
+        if (ball.x - radius <= 0) {
+          ball.x = radius
           ball.vx = Math.abs(ball.vx)
         }
-        // 우벽 반사
-        if (ball.x + ball.radius >= CANVAS_WIDTH) {
-          ball.x = CANVAS_WIDTH - ball.radius
+        if (ball.x + radius >= CANVAS_WIDTH) {
+          ball.x = CANVAS_WIDTH - radius
           ball.vx = -Math.abs(ball.vx)
         }
       }
@@ -110,18 +98,17 @@ export default function GameScreen({ onExit: _onExit }: GameScreenProps) {
     function render() {
       ctx!.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT)
 
-      // 공
       for (const ball of ballsRef.current) {
+        const { radius, color } = BALL_PROPS[ball.size]
         ctx!.beginPath()
-        ctx!.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2)
-        ctx!.fillStyle = '#ff6b35'
+        ctx!.arc(ball.x, ball.y, radius, 0, Math.PI * 2)
+        ctx!.fillStyle = color
         ctx!.fill()
-        ctx!.strokeStyle = '#ff9a6c'
-        ctx!.lineWidth = 3
+        ctx!.strokeStyle = '#ffffff44'
+        ctx!.lineWidth = 2
         ctx!.stroke()
       }
 
-      // 플레이어
       const player = playerRef.current
       ctx!.fillStyle = '#00e676'
       ctx!.fillRect(player.x, player.y, PLAYER_WIDTH, PLAYER_HEIGHT)

@@ -8,6 +8,15 @@ export const PLAYER_SPEED = 250
 
 export const GRAVITY = 500
 
-export const BALL_LARGE_RADIUS = 40
-export const BALL_LARGE_VX = 120
-export const BALL_LARGE_BOUNCE_VY = 600
+export type BallSize = 'large' | 'medium' | 'small'
+
+export const BALL_PROPS: Record<BallSize, {
+  radius: number
+  vx: number
+  bounceVy: number
+  color: string
+}> = {
+  large:  { radius: 40, vx: 120, bounceVy: 600, color: '#ff6b35' },
+  medium: { radius: 26, vx: 160, bounceVy: 480, color: '#ff4081' },
+  small:  { radius: 16, vx: 220, bounceVy: 350, color: '#ffeb3b' },
+}
