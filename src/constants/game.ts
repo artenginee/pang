@@ -8,6 +8,8 @@ export const PLAYER_SPEED = 250
 
 export const GRAVITY = 500
 
+export const HARPOON_SPEED = 800
+
 export type BallSize = 'large' | 'medium' | 'small'
 
 export const BALL_PROPS: Record<BallSize, {

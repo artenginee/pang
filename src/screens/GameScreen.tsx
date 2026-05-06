@@ -6,6 +6,7 @@ import {
   PLAYER_HEIGHT,
   PLAYER_SPEED,
   GRAVITY,
+  HARPOON_SPEED,
   BALL_PROPS,
   type BallSize,
 } from '../constants/game'
@@ -17,6 +18,12 @@ interface Ball {
   size: BallSize
   vx: number
   vy: number
+}
+
+interface Harpoon {
+  x: number
+  tipY: number
+  baseY: number
 }
 
 function makeBall(x: number, size: BallSize, vx: number): Ball {
@@ -38,10 +45,12 @@ export default function GameScreen({ onExit: _onExit }: GameScreenProps) {
   })
 
   const ballsRef = useRef<Ball[]>([
-    makeBall(80,  'large',  120),
-    makeBall(240, 'medium', 160),
-    makeBall(400, 'small', -220),
+    makeBall(80,  'large',   120),
+    makeBall(240, 'medium',  160),
+    makeBall(400, 'small',  -220),
   ])
+
+  const harpoonRef = useRef<Harpoon | null>(null)
 
   useEffect(() => {
     const onDown = (e: KeyboardEvent) => keysRef.current.add(e.code)
@@ -62,10 +71,13 @@ export default function GameScreen({ onExit: _onExit }: GameScreenProps) {
 
     let rafId: number
     let last = performance.now()
+    let spaceWasUp = true  // Space 연속 입력 방지
 
     function update(dt: number) {
       const player = playerRef.current
       const keys = keysRef.current
+
+      // 플레이어 이동
       if (keys.has('ArrowLeft')) {
         player.x = Math.max(0, player.x - PLAYER_SPEED * dt)
       }
@@ -73,6 +85,22 @@ export default function GameScreen({ onExit: _onExit }: GameScreenProps) {
         player.x = Math.min(CANVAS_WIDTH - PLAYER_WIDTH, player.x + PLAYER_SPEED * dt)
       }
 
+      // 작살 발사
+      if (keys.has('Space') && spaceWasUp && harpoonRef.current === null) {
+        const cx = player.x + PLAYER_WIDTH / 2
+        harpoonRef.current = { x: cx, tipY: player.y, baseY: player.y }
+      }
+      spaceWasUp = !keys.has('Space')
+
+      // 작살 이동
+      if (harpoonRef.current) {
+        harpoonRef.current.tipY -= HARPOON_SPEED * dt
+        if (harpoonRef.current.tipY <= 0) {
+          harpoonRef.current = null
+        }
+      }
+
+      // 공 물리
       for (const ball of ballsRef.current) {
         const { radius, bounceVy } = BALL_PROPS[ball.size]
 
@@ -98,6 +126,7 @@ export default function GameScreen({ onExit: _onExit }: GameScreenProps) {
     function render() {
       ctx!.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT)
 
+      // 공
       for (const ball of ballsRef.current) {
         const { radius, color } = BALL_PROPS[ball.size]
         ctx!.beginPath()
@@ -109,6 +138,18 @@ export default function GameScreen({ onExit: _onExit }: GameScreenProps) {
         ctx!.stroke()
       }
 
+      // 작살
+      if (harpoonRef.current) {
+        const h = harpoonRef.current
+        ctx!.beginPath()
+        ctx!.moveTo(h.x, h.baseY)
+        ctx!.lineTo(h.x, h.tipY)
+        ctx!.strokeStyle = '#ffffff'
+        ctx!.lineWidth = 3
+        ctx!.stroke()
+      }
+
+      // 플레이어
       const player = playerRef.current
       ctx!.fillStyle = '#00e676'
       ctx!.fillRect(player.x, player.y, PLAYER_WIDTH, PLAYER_HEIGHT)
