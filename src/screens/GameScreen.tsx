@@ -12,6 +12,8 @@ import {
   HARPOON_SPEED,
   BALL_PROPS,
   NEXT_SIZE,
+  SCORE_TABLE,
+  TIME_BONUS_PER_SEC,
   type BallSize,
 } from '../constants/game'
 import '../styles/GameScreen.css'
@@ -62,10 +64,15 @@ function checkPlayerBallCollision(px: number, py: number, ball: Ball): boolean {
   return dx * dx + dy * dy <= radius * radius
 }
 
+interface ClearResult {
+  score: number
+  timeBonus: number
+}
+
 interface GameScreenProps {
   onExit: () => void
   onGameOver: () => void
-  onClear: () => void
+  onClear: (result: ClearResult) => void
 }
 
 export default function GameScreen({ onExit: _onExit, onGameOver, onClear }: GameScreenProps) {
@@ -80,9 +87,11 @@ export default function GameScreen({ onExit: _onExit, onGameOver, onClear }: Gam
   const invincibleTimerRef = useRef(0)
   const timerRef = useRef(STAGE_TIME)
   const lastDisplaySecondRef = useRef(STAGE_TIME)
+  const scoreRef = useRef(0)
 
   const [lives, setLives] = useState(PLAYER_LIVES)
   const [displayTime, setDisplayTime] = useState(STAGE_TIME)
+  const [score, setScore] = useState(0)
 
   useEffect(() => {
     const onDown = (e: KeyboardEvent) => keysRef.current.add(e.code)
@@ -199,11 +208,16 @@ export default function GameScreen({ onExit: _onExit, onGameOver, onClear }: Gam
             )
           }
 
+          // 점수 추가
+          scoreRef.current += SCORE_TABLE[hit.size]
+          setScore(scoreRef.current)
+
           ballsRef.current = remaining
           harpoonRef.current = null
 
           if (ballsRef.current.length === 0) {
-            onClear()
+            const timeBonus = Math.floor(timerRef.current) * TIME_BONUS_PER_SEC
+            onClear({ score: scoreRef.current, timeBonus })
             return
           }
         }
@@ -291,7 +305,7 @@ export default function GameScreen({ onExit: _onExit, onGameOver, onClear }: Gam
     <div className="game-wrapper">
       <div className="game-container">
         <div className="hud">
-          <span>SCORE: 0</span>
+          <span>SCORE: {score}</span>
           <span>{heartsDisplay}</span>
           <span>TIME: {displayTime}</span>
         </div>

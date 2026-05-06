@@ -18,6 +18,13 @@
   text-shadow: 0 0 24px rgba(245, 197, 24, 0.4);
 }
 
+.hi-score {
+  margin: 0;
+  color: #aaaaaa;
+  font-size: 1rem;
+  letter-spacing: 0.08em;
+}
+
 .main-screen .menu {
   display: flex;
   flex-direction: column;

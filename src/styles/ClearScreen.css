@@ -6,7 +6,7 @@
   width: 100vw;
   height: 100vh;
   background-color: #1a1a2e;
-  gap: 48px;
+  gap: 40px;
 }
 
 .clear-title {
@@ -16,6 +16,42 @@
   letter-spacing: 0.1em;
   margin: 0;
   text-shadow: 0 0 24px rgba(245, 197, 24, 0.5);
+}
+
+.clear-score {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 280px;
+  color: #ffffff;
+  font-size: 1.1rem;
+}
+
+.score-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 32px;
+}
+
+.score-label {
+  color: #aaaaaa;
+  letter-spacing: 0.05em;
+}
+
+.score-value {
+  font-weight: bold;
+  font-variant-numeric: tabular-nums;
+}
+
+.score-divider {
+  border-top: 1px solid #444466;
+  margin: 4px 0;
+}
+
+.score-row.total .score-label,
+.score-row.total .score-value {
+  color: #f5c518;
+  font-size: 1.25rem;
 }
 
 .clear-menu {

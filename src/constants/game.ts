@@ -32,3 +32,10 @@ export const NEXT_SIZE: Record<BallSize, BallSize | null> = {
 export const PLAYER_LIVES = 3
 export const INVINCIBLE_DURATION = 2.0
 export const STAGE_TIME = 60
+
+export const SCORE_TABLE: Record<BallSize, number> = {
+  large:  30,
+  medium: 50,
+  small:  100,
+}
+export const TIME_BONUS_PER_SEC = 10
