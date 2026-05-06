@@ -12,7 +12,7 @@ export default function ClearScreen({ score, timeBonus, onRestart, onMainMenu }:
   const total = score + timeBonus
 
   return (
-    <div className="clear-screen">
+    <div className="clear-screen fade-in">
       <h1 className="clear-title">STAGE CLEAR!</h1>
       <div className="clear-score">
         <div className="score-row">

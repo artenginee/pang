@@ -8,7 +8,7 @@ interface GameOverScreenProps {
 
 export default function GameOverScreen({ onRestart, onMainMenu }: GameOverScreenProps) {
   return (
-    <div className="gameover-screen">
+    <div className="gameover-screen fade-in">
       <h1 className="gameover-title">GAME OVER</h1>
       <div className="gameover-menu">
         <MenuButton label="다시 시작" onClick={onRestart} />

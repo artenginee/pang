@@ -7,7 +7,7 @@ interface HowToScreenProps {
 
 export default function HowToScreen({ onBack }: HowToScreenProps) {
   return (
-    <div className="howto-screen">
+    <div className="howto-screen fade-in">
       <h2 className="howto-title">게임 방법</h2>
       <table className="controls-table">
         <tbody>

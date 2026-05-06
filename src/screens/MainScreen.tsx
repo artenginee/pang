@@ -18,7 +18,7 @@ export default function MainScreen({ hiScore, onStart, onHowTo, onQuit }: MainSc
   }
 
   return (
-    <div className="main-screen">
+    <div className="main-screen fade-in">
       <h1 className="title">PANG</h1>
       <p className="hi-score">HI-SCORE: {hiScore.toLocaleString()}</p>
       <div className="menu">

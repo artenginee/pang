@@ -50,6 +50,38 @@ interface Item {
   lifetime: number
 }
 
+interface Particle {
+  x: number
+  y: number
+  vx: number
+  vy: number
+  radius: number
+  color: string
+  life: number
+  maxLife: number
+}
+
+const PARTICLE_COUNT: Record<BallSize, number> = { large: 12, medium: 8, small: 5 }
+
+function spawnParticles(x: number, y: number, size: BallSize, color: string): Particle[] {
+  const count = PARTICLE_COUNT[size]
+  const particles: Particle[] = []
+  for (let i = 0; i < count; i++) {
+    const angle = (Math.PI * 2 * i) / count + Math.random() * 0.5
+    const speed = 60 + Math.random() * 140
+    particles.push({
+      x, y,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed,
+      radius: 3 + Math.random() * 4,
+      color,
+      life: 0.4,
+      maxLife: 0.4,
+    })
+  }
+  return particles
+}
+
 const PLAYER_INIT_X = CANVAS_WIDTH / 2 - PLAYER_WIDTH / 2
 const PLAYER_INIT_Y = CANVAS_HEIGHT - PLAYER_HEIGHT - 8
 
@@ -129,6 +161,7 @@ export default function GameScreen({ onExit: _onExit, onGameOver, onClear }: Gam
   const ballsRef = useRef<Ball[]>(initialBalls())
   const projectilesRef = useRef<Projectile[]>([])
   const itemsRef = useRef<Item[]>([])
+  const particlesRef = useRef<Particle[]>([])
 
   const livesRef = useRef(PLAYER_LIVES)
   const invincibleTimerRef = useRef(0)
@@ -292,6 +325,10 @@ export default function GameScreen({ onExit: _onExit, onGameOver, onClear }: Gam
               )
             }
 
+            // 파티클 생성
+            const { color } = BALL_PROPS[ball.size]
+            particlesRef.current.push(...spawnParticles(ball.x, ball.y, ball.size, color))
+
             if (Math.random() < ITEM_DROP_CHANCE) {
               const type = ALL_ITEM_TYPES[Math.floor(Math.random() * ALL_ITEM_TYPES.length)]
               itemsRef.current.push({ x: ball.x - ITEM_SIZE / 2, y: ball.y, type, lifetime: ITEM_LIFETIME })
@@ -355,6 +392,15 @@ export default function GameScreen({ onExit: _onExit, onGameOver, onClear }: Gam
         }
       }
 
+      // 파티클 업데이트
+      particlesRef.current = particlesRef.current.filter(p => {
+        p.life -= dt
+        p.x += p.vx * dt
+        p.y += p.vy * dt
+        p.vy += 200 * dt  // 중력
+        return p.life > 0
+      })
+
       // 공 물리
       if (freezeTimerRef.current === 0) {
         for (const ball of ballsRef.current) {
@@ -369,8 +415,41 @@ export default function GameScreen({ onExit: _onExit, onGameOver, onClear }: Gam
       }
     }
 
+    function renderBackground() {
+      const sky = ctx!.createLinearGradient(0, 0, 0, CANVAS_HEIGHT - 40)
+      sky.addColorStop(0, '#0d2137')
+      sky.addColorStop(1, '#1a5276')
+      ctx!.fillStyle = sky
+      ctx!.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT - 40)
+
+      // 후지산 실루엣
+      const mX = CANVAS_WIDTH / 2
+      const mBase = CANVAS_HEIGHT - 40
+      ctx!.beginPath()
+      ctx!.moveTo(mX - 160, mBase)
+      ctx!.lineTo(mX, mBase - 220)
+      ctx!.lineTo(mX + 160, mBase)
+      ctx!.closePath()
+      ctx!.fillStyle = '#1c2e3f'
+      ctx!.fill()
+
+      // 정상 눈
+      ctx!.beginPath()
+      ctx!.moveTo(mX, mBase - 220)
+      ctx!.lineTo(mX - 30, mBase - 170)
+      ctx!.lineTo(mX + 30, mBase - 170)
+      ctx!.closePath()
+      ctx!.fillStyle = '#ddeeff'
+      ctx!.fill()
+
+      // 지면
+      ctx!.fillStyle = '#1a3d1a'
+      ctx!.fillRect(0, CANVAS_HEIGHT - 40, CANVAS_WIDTH, 40)
+    }
+
     function render() {
       ctx!.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT)
+      renderBackground()
 
       // 공
       const isFrozen = freezeTimerRef.current > 0
@@ -410,6 +489,17 @@ export default function GameScreen({ onExit: _onExit, onGameOver, onClear }: Gam
           ctx!.fillText(label, item.x + ITEM_SIZE / 2, item.y + ITEM_SIZE / 2)
         }
       }
+
+      // 파티클
+      for (const p of particlesRef.current) {
+        const t = p.life / p.maxLife
+        ctx!.globalAlpha = t
+        ctx!.beginPath()
+        ctx!.arc(p.x, p.y, p.radius * t, 0, Math.PI * 2)
+        ctx!.fillStyle = p.color
+        ctx!.fill()
+      }
+      ctx!.globalAlpha = 1
 
       // 플레이어
       const isInvincible = invincibleTimerRef.current > 0
