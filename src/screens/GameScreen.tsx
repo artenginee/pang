@@ -65,9 +65,10 @@ function checkPlayerBallCollision(px: number, py: number, ball: Ball): boolean {
 interface GameScreenProps {
   onExit: () => void
   onGameOver: () => void
+  onClear: () => void
 }
 
-export default function GameScreen({ onExit: _onExit, onGameOver }: GameScreenProps) {
+export default function GameScreen({ onExit: _onExit, onGameOver, onClear }: GameScreenProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const keysRef = useRef<Set<string>>(new Set())
 
@@ -202,7 +203,8 @@ export default function GameScreen({ onExit: _onExit, onGameOver }: GameScreenPr
           harpoonRef.current = null
 
           if (ballsRef.current.length === 0) {
-            console.log('스테이지 클리어')
+            onClear()
+            return
           }
         }
       }
