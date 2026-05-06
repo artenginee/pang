@@ -40,9 +40,13 @@ export const SCORE_TABLE: Record<BallSize, number> = {
 }
 export const TIME_BONUS_PER_SEC = 10
 
-export type ItemType = 'clock' | 'shield'
+export type ItemType = 'clock' | 'shield' | 'wire' | 'double'
 export const ITEM_DROP_CHANCE = 0.4
 export const ITEM_FALL_SPEED = 150
 export const ITEM_SIZE = 20
 export const ITEM_LIFETIME = 8
 export const ITEM_FREEZE_DURATION = 5
+
+export type WeaponType = 'harpoon' | 'wire' | 'double'
+export const WIRE_SPEED = 1200
+export const WIRE_LIFETIME = 0.2
